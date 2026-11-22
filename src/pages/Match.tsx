@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getMatchDetail, getStandings } from '../api/espn';
-import type { Incident, Lineup, MatchDetail, MiniResult, StandingGroup } from '../api/types';
+import type { Incident, Lineup, LineupPlayer, MatchDetail, MiniResult, StandingGroup } from '../api/types';
 import { Crest } from '../components/Crest';
 import { Pitch } from '../components/Pitch';
 import { StandingsTable } from '../components/StandingsTable';
@@ -84,23 +84,66 @@ function Stats({ d }: { d: MatchDetail }) {
   );
 }
 
+const DETAIL_ROWS: [string, (d: Record<string, number>) => string | null][] = [
+  ['Minutes', (d) => (d.minutes != null ? `${d.minutes}'` : null)],
+  ['Goals / assists', (d) => `${d.totalGoals ?? 0} / ${d.goalAssists ?? 0}`],
+  ['xG / xA', (d) => `${(d.expectedGoals ?? 0).toFixed(2)} / ${(d.expectedAssists ?? 0).toFixed(2)}`],
+  ['Shots (on target)', (d) => `${d.totalShots ?? 0} (${d.shotsOnTarget ?? 0})`],
+  ['Key passes', (d) => String(d.shotAssists ?? 0)],
+  ['Big chances created', (d) => String(d.bigChanceCreated ?? 0)],
+  ['Dribbles', (d) => `${d.wonContest ?? 0}/${d.totalContest ?? 0}`],
+  ['Passes', (d) => `${d.accuratePasses ?? 0}/${d.totalPasses ?? 0}${d.totalPasses ? ` (${Math.round((d.passPct ?? 0) * 100)}%)` : ''}`],
+  ['Duels won', (d) => `${d.duelsWon ?? 0}/${d.duels ?? 0}`],
+  ['Tackles / interceptions', (d) => `${d.effectiveTackles ?? 0} / ${d.interceptions ?? 0}`],
+  ['Touches', (d) => (d.touches != null ? String(d.touches) : null)],
+  ['Saves', (d) => (d.saves ? String(d.saves) : null)],
+];
+
+function PlayerSheet({ p }: { p: LineupPlayer }) {
+  const d = p.detail;
+  return (
+    <div className="psheet">
+      {d && (
+        <dl className="psheet-stats">
+          {DETAIL_ROWS.map(([label, f]) => {
+            const v = f(d);
+            return v == null ? null : <div key={label}><dt>{label}</dt><dd>{v}</dd></div>;
+          })}
+        </dl>
+      )}
+      {p.ratingParts && p.ratingParts.length > 0 && (
+        <div className="psheet-parts">
+          <div className="psheet-h">How the {p.rating?.toFixed(1)} adds up (from {d ? '6.0' : '6.5'})</div>
+          {p.ratingParts.slice(0, 8).map((x) => (
+            <div key={x.label} className="part"><span>{x.label}</span><b className={x.value >= 0 ? 'up' : 'down'}>{x.value >= 0 ? '+' : ''}{x.value.toFixed(2)}</b></div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlayerList({ l, bench }: { l: Lineup; bench: boolean }) {
+  const [open, setOpen] = useState<string>();
   const ps = l.players.filter((p) => p.starter !== bench).sort((a, b) => (a.formationPlace ?? 99) - (b.formationPlace ?? 99));
   return (
     <ul className="plist">
       {ps.map((p) => (
-        <li key={p.id} className={p.subbedIn ? 'came-on' : ''}>
-          <span className="pl-num">{p.jersey}</span>
-          <span className="pl-name">{p.name}</span>
-          <span className="pl-flags">
-            {p.goals > 0 && <span title="Goal">⚽{p.goals > 1 ? `×${p.goals}` : ''}</span>}
-            {p.yellow && <span className="card yellow sm" />}
-            {p.red && <span className="card red sm" />}
-            {p.subbedIn && <span className="sub-in-ico" title="Came on">↑</span>}
-            {p.subbedOut && <span className="sub-out-ico" title="Substituted">↓</span>}
-          </span>
-          <span className="pl-pos">{p.position === 'SUB' ? '' : p.position}</span>
-          {p.rating != null ? <span className={`rating ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span> : <span />}
+        <li key={p.id} className={`${p.subbedIn ? 'came-on' : ''} ${open === p.id ? 'open' : ''}`}>
+          <button className="prow-btn" onClick={() => setOpen(open === p.id ? undefined : p.id)} aria-expanded={open === p.id} disabled={p.rating == null}>
+            <span className="pl-num">{p.jersey}</span>
+            <span className="pl-name">{p.name}</span>
+            <span className="pl-flags">
+              {p.goals > 0 && <span title="Goal">⚽{p.goals > 1 ? `×${p.goals}` : ''}</span>}
+              {p.yellow && <span className="card yellow sm" />}
+              {p.red && <span className="card red sm" />}
+              {p.subbedIn && <span className="sub-in-ico" title="Came on">↑</span>}
+              {p.subbedOut && <span className="sub-out-ico" title="Substituted">↓</span>}
+            </span>
+            <span className="pl-pos">{p.position === 'SUB' ? '' : p.position}</span>
+            {p.rating != null ? <span className={`rating ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span> : <span />}
+          </button>
+          {open === p.id && <PlayerSheet p={p} />}
         </li>
       ))}
     </ul>
@@ -147,7 +190,7 @@ function TopPlayers({ d }: { d: MatchDetail }) {
           </li>
         ))}
       </ul>
-      <p className="footnote muted">DiDa rating from ESPN match stats: goals, assists, shots, saves, cards and the result. Everyone starts at 6.5.</p>
+      <p className="footnote muted">DiDa rating from ESPN player data: goals, assists, xG and xA, key passes, dribbles, passing, duels, defending, goalkeeping and the result. Tap a player under Lineups to see the breakdown.</p>
     </div>
   );
 }

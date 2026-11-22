@@ -335,6 +335,10 @@ h1, h2, h3, h4 { font-family: var(--display); margin: 0; letter-spacing: -0.01em
 .col-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); padding: 12px 12px 4px; font-family: var(--font); }
 .plist { list-style: none; margin: 0; padding: 0; }
 .plist li { display: grid; grid-template-columns: 24px 1fr auto auto 34px; gap: 6px; padding: 6px 12px; align-items: center; font-size: 13px; }
+.plist li:has(> .prow-btn) { display: block; padding: 0; }
+.prow-btn { width: 100%; display: grid; grid-template-columns: 24px 1fr auto auto 34px; gap: 6px; padding: 7px 12px; align-items: center; text-align: left; }
+.prow-btn:not(:disabled):hover { background: var(--surface-2); }
+.prow-btn:disabled { cursor: default; }
 .plist li + li { border-top: 1px solid var(--line); }
 .plist .came-on .pl-name { color: var(--win); }
 .pl-num { color: var(--text-3); font-weight: 600; text-align: right; }
@@ -517,3 +521,15 @@ label.list-row { cursor: pointer; padding: 10px 6px 10px 14px; }
 .club-top-cols i { font-style: normal; }
 .club-top-cols b { font-family: var(--display); font-size: 15px; }
 .rating.none { background: rgba(255, 255, 255, 0.15); }
+
+/* ---------- player sheet ---------- */
+.psheet { padding: 4px 12px 12px 42px; display: grid; gap: 10px; background: var(--surface-2); }
+.psheet-stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12px; }
+.psheet-stats div { display: flex; justify-content: space-between; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.psheet-stats dt { color: var(--text-2); }
+.psheet-stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.psheet-h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); font-weight: 600; margin-bottom: 4px; }
+.part { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.part .up { color: var(--win); }
+.part .down { color: var(--loss); }
+@media (max-width: 480px) { .psheet { padding-left: 12px; } .psheet-stats { grid-template-columns: 1fr; } }

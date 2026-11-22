@@ -104,8 +104,11 @@ export interface LineupPlayer {
   red: boolean;
   /** Raw per-match stats from the provider (totalGoals, goalAssists, shotsOnTarget, saves, …). */
   stats: Record<string, number>;
+  /** Detailed per-match stats (xG, passes, duels…) when the detailed feed answered. */
+  detail?: Record<string, number>;
   /** DiDa rating 3.0–10.0, undefined when the player didn't play. */
   rating?: number;
+  ratingParts?: { label: string; value: number }[];
 }
 
 export interface Lineup {

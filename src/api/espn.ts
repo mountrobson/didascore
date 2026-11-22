@@ -338,6 +338,36 @@ function mapLineups(rosters: any[] | undefined): Lineup[] {
   }));
 }
 
+const CORE = 'https://sports.core.api.espn.com/v2/sports';
+
+/**
+ * Per-player detailed stats (minutes, xG, xA, key passes, dribbles, duels, passes, tackles, goals prevented…)
+ * from ESPN's core API: one small request per player who played. Missing data just means no detail.
+ */
+async function withPlayerDetail(sport: string, league: string, eventId: string, lineups: Lineup[], state: Match['state']): Promise<Lineup[]> {
+  if (state === 'pre' || !league || league === 'all') return lineups;
+  const ttl = state === 'in' ? 60_000 : 24 * 3600_000;
+  return Promise.all(
+    lineups.map(async (l) => ({
+      ...l,
+      players: await Promise.all(
+        l.players.map(async (p) => {
+          if (!p.starter && !p.subbedIn) return p;
+          const url = `${CORE}/${sportByKey(sport).espn}/leagues/${league}/events/${eventId}/competitions/${eventId}/competitors/${l.team.id}/roster/${p.id}/statistics/0`;
+          try {
+            const j = await getJSON<any>(url, ttl);
+            const d: Record<string, number> = {};
+            for (const c of j.splits?.categories ?? []) for (const x of c.stats ?? []) d[x.name] = Number(x.value ?? 0);
+            return Object.keys(d).length ? { ...p, detail: d } : p;
+          } catch {
+            return p;
+          }
+        })
+      ),
+    }))
+  );
+}
+
 function mapMini(ev: any, teamId: string): MiniResult {
   const res = ev.gameResult as MiniResult['result'];
   return {
@@ -381,7 +411,10 @@ export async function getMatchDetail(sport: string, leagueSlug: string, id: stri
     league: { id: String(lg.id ?? ''), slug: lg.slug ?? slug, name: lg.name ?? '', short: lg.shortName || lg.abbreviation || lg.name || '', logo: lg.logos?.[0]?.href ?? leagueFromIndex(String(lg.id))?.logo, hasStandings: true },
     incidents,
     stats: mapStats(s.boxscore, homeId),
-    lineups: rateLineups(mapLineups(s.rosters).sort((x, y) => (x.side === y.side ? 0 : x.side === 'home' ? -1 : 1)), match),
+    lineups: rateLineups(
+      await withPlayerDetail(sport, lg.slug ?? slug, id, mapLineups(s.rosters).sort((x, y) => (x.side === y.side ? 0 : x.side === 'home' ? -1 : 1)), match.state),
+      match
+    ),
     attendance: s.gameInfo?.attendance || undefined,
     referee: ref?.displayName || ref?.fullName,
     form,
