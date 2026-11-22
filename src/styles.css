@@ -334,7 +334,7 @@ h1, h2, h3, h4 { font-family: var(--display); margin: 0; letter-spacing: -0.01em
 .col-title { font-size: 14px; padding: 4px 12px 8px; display: flex; gap: 8px; align-items: center; }
 .col-sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); padding: 12px 12px 4px; font-family: var(--font); }
 .plist { list-style: none; margin: 0; padding: 0; }
-.plist li { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 6px; padding: 6px 12px; align-items: center; font-size: 13px; }
+.plist li { display: grid; grid-template-columns: 24px 1fr auto auto 34px; gap: 6px; padding: 6px 12px; align-items: center; font-size: 13px; }
 .plist li + li { border-top: 1px solid var(--line); }
 .plist .came-on .pl-name { color: var(--win); }
 .pl-num { color: var(--text-3); font-weight: 600; text-align: right; }
@@ -492,3 +492,28 @@ label.list-row { cursor: pointer; padding: 10px 6px 10px 14px; }
   .page-title h1 { font-size: 20px; }
   .mini { grid-template-columns: 46px 16px 16px 1fr auto 22px; gap: 6px; padding: 7px 10px; }
 }
+
+/* ---------- player ratings ---------- */
+.rating { display: inline-grid; place-items: center; min-width: 32px; height: 20px; padding: 0 4px; border-radius: 6px; font-size: 11.5px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.rating.sm { min-width: 26px; height: 16px; font-size: 10px; border-radius: 4px; margin-top: 1px; }
+.r-top { background: #1f6feb; }
+.r-great { background: #16a34a; }
+.r-good { background: #65a30d; }
+.r-ok { background: #ca8a04; }
+.r-poor { background: #dc2626; }
+.pad-x { padding: 0 12px; }
+@media (min-width: 640px) { .pad-x { padding: 0 16px; } }
+@media (max-width: 480px) { .pad-x { padding: 0 8px; } }
+.topplayers { margin-top: 8px; }
+.plist li.tp-row { grid-template-columns: 18px 1fr auto 34px; }
+.potm { display: block; font-size: 10.5px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---------- club top 5 ---------- */
+.club-top { display: block; margin: 10px 10px 0; padding: 8px 12px 6px; background: rgba(0, 0, 0, 0.22); border-radius: 14px; }
+.club-top-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.8; padding: 2px 0 6px; }
+.club-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 14px; }
+.club-top-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.club-top-cols { display: grid; grid-template-columns: 26px 26px 40px; gap: 4px; text-align: center; align-items: center; justify-items: center; }
+.club-top-cols i { font-style: normal; }
+.club-top-cols b { font-family: var(--display); font-size: 15px; }
+.rating.none { background: rgba(255, 255, 255, 0.15); }

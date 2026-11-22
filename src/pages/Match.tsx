@@ -8,6 +8,7 @@ import { StandingsTable } from '../components/StandingsTable';
 import { Empty, ErrorBox, Loading } from '../components/States';
 import { Star } from '../components/Star';
 import { fmtLongDate, fmtShortDate, fmtTime } from '../lib/dates';
+import { ratingBand } from '../lib/rating';
 import { favorites, settings, toggleMatch, toggleTeam } from '../lib/store';
 import { usePoll } from '../lib/usePoll';
 
@@ -98,7 +99,8 @@ function PlayerList({ l, bench }: { l: Lineup; bench: boolean }) {
             {p.subbedIn && <span className="sub-in-ico" title="Came on">↑</span>}
             {p.subbedOut && <span className="sub-out-ico" title="Substituted">↓</span>}
           </span>
-          <span className="pl-pos">{p.position}</span>
+          <span className="pl-pos">{p.position === 'SUB' ? '' : p.position}</span>
+          {p.rating != null ? <span className={`rating ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span> : <span />}
         </li>
       ))}
     </ul>
@@ -125,6 +127,28 @@ function Lineups({ d }: { d: MatchDetail }) {
         ))}
       </div>
     </>
+  );
+}
+
+function TopPlayers({ d }: { d: MatchDetail }) {
+  const all = d.lineups.flatMap((l) => l.players.filter((p) => p.rating != null).map((p) => ({ p, team: l.team })));
+  if (!all.length) return null;
+  const top = all.sort((a, b) => (b.p.rating ?? 0) - (a.p.rating ?? 0)).slice(0, 5);
+  return (
+    <div className="card-box topplayers">
+      <h3 className="col-title">Top rated players</h3>
+      <ul className="plist">
+        {top.map(({ p, team }, i) => (
+          <li key={p.id} className="tp-row">
+            <Crest src={team.logo} name={team.name} size={18} />
+            <span className="pl-name">{p.name}{i === 0 && d.match.state === 'post' && <span className="potm">Player of the match</span>}</span>
+            <span className="pl-flags">{p.goals > 0 && <span>⚽{p.goals > 1 ? `×${p.goals}` : ''}</span>}{(p.stats.goalAssists ?? 0) > 0 && <span className="muted">A{p.stats.goalAssists > 1 ? `×${p.stats.goalAssists}` : ''}</span>}</span>
+            <span className={`rating ${ratingBand(p.rating!)}`}>{p.rating!.toFixed(1)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="footnote muted">DiDa rating from ESPN match stats: goals, assists, shots, saves, cards and the result. Everyone starts at 6.5.</p>
+    </div>
   );
 }
 
@@ -254,6 +278,7 @@ export function MatchPage() {
         {tab === 'summary' && (
           <>
             <Timeline d={data} />
+            <div className="pad-x"><TopPlayers d={data} /></div>
             <dl className="info">
               <div><dt>Kick-off</dt><dd>{fmtLongDate(m.date)}, {fmtTime(m.date, h24)}</dd></div>
               {m.venue && <div><dt>Venue</dt><dd>{m.venue}</dd></div>}

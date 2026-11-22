@@ -1,4 +1,5 @@
 import type { Lineup, LineupPlayer } from '../api/types';
+import { ratingBand } from '../lib/rating';
 
 // ESPN position codes look like G, CD-L, RB, LM, AM-R, F. Depth = distance from own goal.
 function depth(pos = ''): number {
@@ -51,6 +52,7 @@ function Dot({ p, color }: { p: LineupPlayer; color: string }) {
         {p.subbedOut && <span className="pp-badge off" title="Substituted" />}
       </span>
       <span className="pp-name">{p.short}</span>
+      {p.rating != null && <span className={`rating sm ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span>}
     </div>
   );
 }

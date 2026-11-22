@@ -5,6 +5,7 @@
 import { getJSON, peekJSON } from './http';
 import { espnDatesForLocalDay, etYmd, isoDay } from '../lib/dates';
 import { sportByKey } from '../sports';
+import { rateLineups } from '../lib/rating';
 import type {
   Incident, League, Lineup, LineupPlayer, Match, MatchDetail, MiniResult, Side, StandingGroup, StatPair, Team, TeamSchedule,
 } from './types';
@@ -331,6 +332,7 @@ function mapLineups(rosters: any[] | undefined): Lineup[] {
         goals: st.totalGoals ?? 0,
         yellow: (st.yellowCards ?? 0) > 0,
         red: (st.redCards ?? 0) > 0,
+        stats: st,
       };
     }),
   }));
@@ -379,7 +381,7 @@ export async function getMatchDetail(sport: string, leagueSlug: string, id: stri
     league: { id: String(lg.id ?? ''), slug: lg.slug ?? slug, name: lg.name ?? '', short: lg.shortName || lg.abbreviation || lg.name || '', logo: lg.logos?.[0]?.href ?? leagueFromIndex(String(lg.id))?.logo, hasStandings: true },
     incidents,
     stats: mapStats(s.boxscore, homeId),
-    lineups: mapLineups(s.rosters).sort((x, y) => (x.side === y.side ? 0 : x.side === 'home' ? -1 : 1)),
+    lineups: rateLineups(mapLineups(s.rosters).sort((x, y) => (x.side === y.side ? 0 : x.side === 'home' ? -1 : 1)), match),
     attendance: s.gameInfo?.attendance || undefined,
     referee: ref?.displayName || ref?.fullName,
     form,

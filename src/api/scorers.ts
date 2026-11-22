@@ -59,3 +59,35 @@ export async function getGoldenShoe(): Promise<Scorer[]> {
     .sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.goals - a.goals || (a.matches ?? 99) - (b.matches ?? 99))
     .slice(0, 50);
 }
+
+export interface Contributor {
+  id: string;
+  name: string;
+  goals: number;
+  assists: number;
+  matches?: number;
+  /** Average DiDa rating over the club's recent matches the player played in. */
+  form?: number;
+  formGames?: number;
+}
+
+/** A club's top goal contributors (goals + assists) in one league, from the league leader boards. */
+export async function getClubContributors(slug: string, teamId: string): Promise<Contributor[]> {
+  const r = await getJSON<any>(`${SITE}/${slug}/statistics`, 600_000);
+  const by = new Map<string, Contributor>();
+  const take = (name: string, field: 'goals' | 'assists') => {
+    for (const l of r.stats?.find((s: any) => s.name === name)?.leaders ?? []) {
+      const a = l.athlete ?? {};
+      if (String(a.team?.id) !== teamId) continue;
+      const id = String(a.id);
+      const c: Contributor = by.get(id) ?? { id, name: a.displayName ?? '', goals: 0, assists: 0 };
+      c[field] = Number(l.value ?? 0);
+      const m = String(l.shortDisplayValue ?? '').match(/M:\s*(\d+)/);
+      if (m) c.matches = Math.max(c.matches ?? 0, Number(m[1]));
+      by.set(id, c);
+    }
+  };
+  take('goalsLeaders', 'goals');
+  take('assistsLeaders', 'assists');
+  return [...by.values()].sort((a, b) => b.goals + b.assists - (a.goals + a.assists) || b.goals - a.goals);
+}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getLeagues, getTeamSchedule, leagueFromIndex } from '../api/espn';
+import { getLeagues, getMatchDetail, getTeamSchedule, leagueFromIndex } from '../api/espn';
+import { getClubContributors, type Contributor } from '../api/scorers';
+import { ratingBand } from '../lib/rating';
 import type { Match } from '../api/types';
 import { fmtShortDate, fmtTime } from '../lib/dates';
 import { club, settings } from '../lib/store';
@@ -23,6 +25,57 @@ function resultFor(m: Match, teamId: string) {
   const opp = me === m.home ? m.away : m.home;
   const a = Number(me.score), b = Number(opp.score);
   return a > b ? 'W' : a < b ? 'L' : 'D';
+}
+
+/** Average DiDa rating per player over the club's last `n` finished matches. */
+async function recentForm(sport: string, teamId: string, results: Match[], n = 5) {
+  const details = await Promise.all(results.slice(0, n).map((m) => getMatchDetail(sport, m.leagueSlug, m.id, 3_600_000).catch(() => undefined)));
+  const sums = new Map<string, { t: number; n: number }>();
+  for (const d of details) {
+    const l = d?.lineups.find((x) => x.team.id === teamId);
+    for (const p of l?.players ?? []) {
+      if (p.rating == null) continue;
+      const s = sums.get(p.id) ?? { t: 0, n: 0 };
+      s.t += p.rating;
+      s.n += 1;
+      sums.set(p.id, s);
+    }
+  }
+  return sums;
+}
+
+function TopFive({ league, teamId, sport, results }: { league: string; teamId: string; sport: string; results: Match[] }) {
+  const resultKey = results.slice(0, 5).map((m) => m.id).join(',');
+  const { data } = usePoll<Contributor[]>(
+    async () => {
+      const [top, form] = await Promise.all([getClubContributors(league, teamId), recentForm(sport, teamId, results)]);
+      return top.slice(0, 5).map((c) => {
+        const f = form.get(c.id);
+        return f ? { ...c, form: Math.round((f.t / f.n) * 10) / 10, formGames: f.n } : c;
+      });
+    },
+    [league, teamId, resultKey],
+    () => 900_000
+  );
+  if (!data?.length) return null;
+  return (
+    <Link to={`/scorers?t=${league}`} className="club-top">
+      <div className="club-top-head">
+        <span>Top 5 · {leagueFromIndex(league)?.short ?? league}</span>
+        <span className="club-top-cols"><i>G</i><i>A</i><i title="Average DiDa rating, last 5 matches">Form</i></span>
+      </div>
+      {data.map((c) => (
+        <div className="club-top-row" key={c.id}>
+          <span className="club-top-name">{c.name}</span>
+          <span className="club-top-cols">
+            <b>{c.goals}</b>
+            <b>{c.assists}</b>
+            {c.form != null ? <span className={`rating ${ratingBand(c.form)}`} title={`Average over ${c.formGames} match${c.formGames === 1 ? '' : 'es'}`}>{c.form.toFixed(1)}</span> : <span className="rating none">–</span>}
+          </span>
+        </div>
+      ))}
+    </Link>
+  );
 }
 
 /** The "my club" hero at the top of Scores: live match, else next match with countdown, plus last result and form. */
@@ -113,6 +166,8 @@ export function ClubCard() {
           <span className="club-last-date">{lgName(last)} · {fmtShortDate(last.date)}</span>
         </Link>
       )}
+
+      {data && <TopFive league={c.league} teamId={c.id} sport={c.sport} results={data.results} />}
 
       <nav className="club-links">
         <Link to="/club">Fixtures</Link>
