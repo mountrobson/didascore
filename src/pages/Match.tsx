@@ -29,7 +29,7 @@ function Timeline({ d }: { d: MatchDetail }) {
   return (
     <ol className="timeline">
       {items.map((i, idx) => {
-        if (i.kind === 'period') return <li key={idx} className="tl-period"><span>{i.text.replace(/\.$/, '')}</span></li>;
+        if (i.kind === 'period') return <li key={idx} className="tl-period"><span>{i.text.split(',')[0].replace(/\.$/, '')}</span></li>;
         const label = i.kind === 'sub' ? (
           <><span className="sub-in">{i.player}</span>{i.secondary && <span className="sub-out">{i.secondary}</span>}</>
         ) : (
@@ -259,7 +259,7 @@ export function MatchPage() {
               {m.venue && <div><dt>Venue</dt><dd>{m.venue}</dd></div>}
               {data.attendance ? <div><dt>Attendance</dt><dd>{data.attendance.toLocaleString()}</dd></div> : null}
               {data.referee && <div><dt>Referee</dt><dd>{data.referee}</dd></div>}
-              {m.note && <div><dt>Note</dt><dd>{m.note}</dd></div>}
+              {m.note && m.note !== data.league.short && m.note !== data.league.name && <div><dt>Note</dt><dd>{m.note}</dd></div>}
             </dl>
           </>
         )}
