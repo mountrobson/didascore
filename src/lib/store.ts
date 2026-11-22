@@ -41,11 +41,25 @@ export interface FavLeague {
   sport: string;
 }
 
+/** The club the app is built around. Change it from any team page ("Make my club"). */
+export const DEFAULT_CLUB: FavTeam = {
+  id: '83',
+  name: 'Barcelona',
+  logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/83.png',
+  league: 'esp.1',
+  sport: 'soccer',
+};
+
 export const favorites = createStore<{ teams: FavTeam[]; leagues: FavLeague[]; matches: string[] }>('dida.favorites', {
-  teams: [],
-  leagues: [],
+  teams: [DEFAULT_CLUB],
+  leagues: [
+    { slug: 'esp.1', name: 'Spanish LALIGA', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/15.png', sport: 'soccer' },
+    { slug: 'uefa.champions', name: 'UEFA Champions League', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/2.png', sport: 'soccer' },
+  ],
   matches: [],
 });
+
+export const club = createStore<{ team: FavTeam }>('dida.club', { team: DEFAULT_CLUB });
 
 export const settings = createStore<{ theme: 'system' | 'dark' | 'light'; h24: boolean; goalAlerts: boolean }>('dida.settings', {
   theme: 'system',

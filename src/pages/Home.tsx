@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getDayMatches, getLeagues, leagueFromIndex, peekDayMatches } from '../api/espn';
 import type { League, Match } from '../api/types';
+import { ClubCard } from '../components/ClubCard';
 import { Crest } from '../components/Crest';
 import { DateStrip } from '../components/DateStrip';
 import { Icon } from '../components/Icon';
@@ -140,11 +141,13 @@ export function Home() {
           <button className={`chip ${filter === 'following' ? 'sel' : ''}`} onClick={() => setParam('f', 'following')}>
             <Icon name="star" size={14} /> Following
           </button>
-          <span className="updated" title="Updates automatically">
+          <span className="updated hide-sm" title="Updates automatically">
             {updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
           </span>
         </div>
       </div>
+
+      {isToday && filter === 'all' && <ClubCard />}
 
       {error && !data && <ErrorBox error={error} onRetry={refresh} />}
       {loading && !data && <Loading />}

@@ -51,6 +51,7 @@ function mapTeam(t: any): Team {
     abbr: t?.abbreviation || (t?.displayName || 'TBD').slice(0, 3).toUpperCase(),
     logo: t?.logo || t?.logos?.[0]?.href,
     color: t?.color ? `#${t.color}` : undefined,
+    alt: t?.alternateColor ? `#${t.alternateColor}` : undefined,
   };
 }
 

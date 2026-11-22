@@ -3,14 +3,15 @@ import { HashRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } fr
 import { Crest } from './components/Crest';
 import { Icon } from './components/Icon';
 import { Toasts } from './components/Toasts';
-import { favorites, settings } from './lib/store';
+import { club, favorites, settings } from './lib/store';
 import { Following } from './pages/Following';
 import { Home } from './pages/Home';
 import { LeaguePage } from './pages/League';
 import { Leagues } from './pages/Leagues';
 import { MatchPage } from './pages/Match';
 import { Settings } from './pages/Settings';
-import { TeamPage } from './pages/Team';
+import { Scorers } from './pages/Scorers';
+import { ClubPage, TeamPage } from './pages/Team';
 
 function Theme() {
   const { theme } = settings.use();
@@ -25,7 +26,7 @@ function Theme() {
 function TopBar() {
   const loc = useLocation();
   const nav = useNavigate();
-  const isRoot = ['/', '/following', '/leagues', '/settings'].includes(loc.pathname);
+  const isRoot = ['/', '/following', '/leagues', '/settings', '/club', '/scorers'].includes(loc.pathname);
   return (
     <header className="topbar">
       {isRoot ? (
@@ -45,9 +46,12 @@ function TopBar() {
 }
 
 function BottomNav() {
+  const { team } = club.use();
   return (
     <nav className="bottomnav" aria-label="Main">
       <NavLink to="/" end><Icon name="ball" /><span>Scores</span></NavLink>
+      <NavLink to="/club"><Crest src={team.logo} name={team.name} size={22} /><span>{team.name.length > 10 ? 'My club' : team.name}</span></NavLink>
+      <NavLink to="/scorers"><Icon name="boot" /><span>Scorers</span></NavLink>
       <NavLink to="/following"><Icon name="star" /><span>Following</span></NavLink>
       <NavLink to="/leagues"><Icon name="trophy" /><span>Leagues</span></NavLink>
     </nav>
@@ -60,6 +64,8 @@ function SideBar() {
     <aside className="sidebar">
       <nav className="side-nav">
         <NavLink to="/" end><Icon name="ball" /> Scores</NavLink>
+        <NavLink to="/club"><Icon name="shield" /> My club</NavLink>
+        <NavLink to="/scorers"><Icon name="boot" /> Golden Shoe</NavLink>
         <NavLink to="/following"><Icon name="star" /> Following</NavLink>
         <NavLink to="/leagues"><Icon name="trophy" /> Leagues</NavLink>
       </nav>
@@ -108,6 +114,8 @@ export default function App() {
             <Route path="/following" element={<Following />} />
             <Route path="/leagues" element={<Leagues />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/club" element={<ClubPage />} />
+            <Route path="/scorers" element={<Scorers />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </main>

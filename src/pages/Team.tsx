@@ -1,14 +1,40 @@
 import { useParams } from 'react-router-dom';
+import { getTopScorers } from '../api/scorers';
 import { getTeamSchedule } from '../api/espn';
 import { Crest } from '../components/Crest';
 import { MatchRow } from '../components/MatchRow';
 import { Empty, ErrorBox, Loading } from '../components/States';
 import { Star } from '../components/Star';
-import { favorites, toggleTeam } from '../lib/store';
+import { club, favorites, toggleTeam } from '../lib/store';
 import { usePoll } from '../lib/usePoll';
 
-export function TeamPage() {
-  const { sport = 'soccer', league = 'eng.1', id = '' } = useParams();
+export function ClubPage() {
+  const { team } = club.use();
+  return <TeamPage sport={team.sport} league={team.league} id={team.id} />;
+}
+
+function ClubScorers({ league, teamId }: { league: string; teamId: string }) {
+  const { data } = usePoll(() => getTopScorers(league), [league], () => 600_000);
+  const mine = (data ?? []).filter((s) => s.team.id === teamId).slice(0, 8);
+  if (!mine.length) return null;
+  return (
+    <section className="group">
+      <div className="ghead static"><span className="gname">Top scorers · {mine[0].leagueName}</span></div>
+      <ul className="scorer-list">
+        {mine.map((s) => (
+          <li key={s.id}><span>{s.name}</span><span className="muted">{s.matches != null ? `${s.matches} MP` : ''}</span><strong>{s.goals}</strong></li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function TeamPage(props: { sport?: string; league?: string; id?: string }) {
+  const p = useParams();
+  const sport = props.sport ?? p.sport ?? 'soccer';
+  const league = props.league ?? p.league ?? 'eng.1';
+  const id = props.id ?? p.id ?? '';
+  const { team: myClub } = club.use();
   const fav = favorites.use();
   const { data, error, loading, refresh } = usePoll(
     () => getTeamSchedule(sport, league, id),
@@ -37,12 +63,18 @@ export function TeamPage() {
         </div>
         <Star on={on} label={t.name} onClick={() => toggleTeam({ id: t.id, name: t.name, logo: t.logo, league, sport })} />
       </div>
+      {myClub.id !== t.id && (
+        <div className="pad">
+          <button className="chip" onClick={() => club.set({ team: { id: t.id, name: t.name, logo: t.logo, league, sport } })}>Make {t.short} my club</button>
+        </div>
+      )}
       <section className="group">
         <div className="ghead static"><span className="gname">Upcoming</span></div>
         <div className="glist">
           {data.upcoming.length ? data.upcoming.slice(0, 10).map((m) => <MatchRow key={m.id} m={m} showDate />) : <Empty title="No upcoming fixtures listed" />}
         </div>
       </section>
+      {sport === 'soccer' && <ClubScorers league={league} teamId={t.id} />}
       <section className="group">
         <div className="ghead static"><span className="gname">Results</span></div>
         <div className="glist">

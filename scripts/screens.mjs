@@ -5,16 +5,15 @@ const base = process.argv[2] || 'http://localhost:4173/';
 const out = process.argv[3] || 'screens';
 const browser = await chromium.launch();
 const shots = [
-  ['home', '#/'], ['match', '#/match/soccer/all/401878755'], ['league', '#/league/soccer/eng.1'], ['team', '#/team/soccer/eng.1/364'], ['leagues', '#/leagues'], ['following', '#/following'],
+  ['home', '#/'], ['match', '#/match/soccer/all/401878755'], ['league', '#/league/soccer/eng.1'], ['team', '#/team/soccer/eng.1/364'], ['leagues', '#/leagues'], ['following', '#/following'], ['scorers', '#/scorers'], ['club', '#/club'],
 ];
 for (const scheme of ['dark', 'light']) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, colorScheme: scheme });
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, colorScheme: scheme });
   await ctx.route(/espn(cdn)?\.com|fonts\.(googleapis|gstatic)\.com/, (r) => {
     const url = r.request().url();
     if (url.includes('site.api.espn.com')) return r.fulfill({ json: route(url), headers: { 'access-control-allow-origin': '*' } });
     return r.abort();
   });
-  await ctx.addInitScript(() => localStorage.setItem('dida.favorites', JSON.stringify({ teams: [{ id: '364', name: 'Liverpool', league: 'eng.1', sport: 'soccer' }], leagues: [], matches: [] })));
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

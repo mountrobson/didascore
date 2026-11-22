@@ -94,8 +94,8 @@ export const standings = { children: [{ name: '2026-27 English Premier League', 
 })) } }] };
 
 export const teamInfo = { team: { ...teams.liv, standingSummary: '4th in English Premier League' } };
-export const teamSchedule = { team: teams.liv, events: scoreboard.events.filter((e) => e.id === '401878755') };
-export const teamFixtures = { team: teams.liv, events: [ev('f1', '700', 7 * 1440, st('pre', 'STATUS_SCHEDULED', "0'", 'Scheduled', 'Scheduled'), teams.eve, teams.liv, '0', '0')] };
+export const teamSchedule = { team: teams.liv, events: scoreboard.events.filter((e) => ['401878755', '6'].includes(e.id)) };
+export const teamFixtures = { team: teams.liv, events: [ev('f1', '740', 2 * 1440 + 95, st('pre', 'STATUS_SCHEDULED', "0'", 'Scheduled', 'Scheduled'), teams.bar, teams.atm, '0', '0')] };
 export const leagueTeams = { sports: [{ leagues: [{ teams: Object.values(teams).map((t) => ({ team: t })) }] }] };
 export const calendar = { events: [], leagues: [{ calendar: [iso(-1440 * 7), iso(-200), iso(30), iso(7 * 1440)] }] };
 
@@ -104,6 +104,7 @@ export function route(url) {
   const p = u.pathname;
   if (p.includes('/leagues/dropdown')) return leagues;
   if (p.endsWith('/summary')) return summary;
+  if (p.endsWith('/statistics')) return { league: { shortName: p.split('/').slice(-2, -1)[0].toUpperCase() }, stats: [{ name: 'goalsLeaders', leaders: [['Raphinha', '83', 15], ['K. Mbappé', '86', 13], ['R. Lewandowski', '83', 9]].map(([n, t, g], i) => ({ value: g, shortDisplayValue: `M: 11, G: ${g}: A: ${i}`, athlete: { id: n + p, displayName: n, team: { id: t, displayName: t === '83' ? 'Barcelona' : 'Real Madrid', abbreviation: 'X' } } })) }] };
   if (p.endsWith('/standings')) return standings;
   if (p.match(/\/teams\/\d+\/schedule$/)) return u.searchParams.get('fixture') ? teamFixtures : teamSchedule;
   if (p.match(/\/teams\/\d+$/)) return teamInfo;

@@ -10,6 +10,7 @@ export interface Team {
   abbr: string;
   logo?: string;
   color?: string;
+  alt?: string;
 }
 
 export interface Side {
@@ -137,4 +138,17 @@ export interface TeamSchedule {
   standingSummary?: string;
   upcoming: Match[];
   results: Match[];
+}
+
+export interface Scorer {
+  id: string;
+  name: string;
+  team: Team;
+  goals: number;
+  matches?: number;
+  assists?: number;
+  league: string; // slug
+  leagueName?: string;
+  factor?: number;
+  points?: number;
 }

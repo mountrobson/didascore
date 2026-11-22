@@ -15,7 +15,8 @@ function TeamLine({ side, other, m, fav }: { side: Side; other: Side; m: Match; 
     <div className={`tl ${lost ? 'lost' : ''} ${side.winner ? 'won' : ''}`}>
       <Crest src={side.team.logo} name={side.team.name} size={18} />
       <span className="tl-name">
-        {side.team.name}
+        <span className="nm-full">{side.team.name}</span>
+        <span className="nm-short">{side.team.short}</span>
         {fav && <span className="dot-fav" title="Following" />}
       </span>
       {side.redCards > 0 && <span className="rc" title={`${side.redCards} red card${side.redCards > 1 ? 's' : ''}`}>{side.redCards > 1 ? side.redCards : ''}</span>}
