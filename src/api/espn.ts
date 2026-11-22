@@ -104,8 +104,8 @@ export function mapEvent(e: any, sport: string, leagueSlugHint?: string): Match 
     redCards: reds(s),
     shootout: x.shootoutScore ?? undefined,
   });
-  const leagueId = (e.uid?.match(/l:(\d+)/) ?? [])[1] ?? '';
-  const slug = leagueSlugHint && leagueSlugHint !== 'all' ? leagueSlugHint : leagueFromIndex(leagueId)?.slug ?? 'all';
+  const leagueId = e.league?.id ? String(e.league.id) : (e.uid?.match(/l:(\d+)/) ?? [])[1] ?? '';
+  const slug = e.league?.slug ?? (leagueSlugHint && leagueSlugHint !== 'all' ? leagueSlugHint : leagueFromIndex(leagueId)?.slug ?? 'all');
   const st = statusOf(c.status ?? e.status, e.date, sport);
   return {
     id: String(e.id),
@@ -389,21 +389,31 @@ export async function getMatchDetail(sport: string, leagueSlug: string, id: stri
 
 // ---------- teams ----------
 
+const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`;
+
+// Note: ESPN's /teams/{id} and /teams endpoints send no CORS header, so a browser app can't use them.
+// Team name, crest and table position come from the schedule and standings feeds instead.
 export async function getTeamSchedule(sport: string, leagueSlug: string, teamId: string): Promise<TeamSchedule> {
   const base = `${SITE}/${sportByKey(sport).espn}/${leagueSlug}/teams/${teamId}`;
-  const [info, past, next] = await Promise.all([
-    getJSON<any>(base, 300_000).catch(() => ({})),
+  if (!leagueIndex) await getLeagues(sport).catch(() => undefined);
+  const [past, next, table] = await Promise.all([
     getJSON<any>(`${base}/schedule`, 60_000).catch(() => ({ events: [] })),
     getJSON<any>(`${base}/schedule?fixture=true`, 60_000).catch(() => ({ events: [] })),
+    getStandings(sport, leagueSlug).catch(() => [] as StandingGroup[]),
   ]);
-  const team = mapTeam(info.team ?? past.team ?? next.team);
+  const row = table.flatMap((g) => g.rows).find((r) => r.team.id === teamId);
+  const raw = past.team ?? next.team;
+  const team: Team = raw ? { ...mapTeam(raw), logo: mapTeam(raw).logo ?? row?.team.logo } : row?.team ?? mapTeam({ id: teamId });
+  const lg = leagueFromIndex(leagueSlug);
+  const standingSummary = row ? `${ordinal(row.rank)} in ${lg?.short ?? leagueSlug} · ${row.points} pts` : undefined;
   const mapAll = (r: any) => (r.events ?? []).map((e: any) => mapEvent(e, sport));
   const results = mapAll(past).filter((m: Match) => m.state === 'post').sort((a: Match, b: Match) => b.date.localeCompare(a.date));
   const upcoming = mapAll(next).filter((m: Match) => m.state !== 'post').sort((a: Match, b: Match) => a.date.localeCompare(b.date));
-  return { team, standingSummary: info.team?.standingSummary, upcoming, results };
+  return { team, standingSummary, upcoming, results };
 }
 
+/** Teams of a league, taken from its table (the /teams endpoint has no CORS). */
 export async function getLeagueTeams(sport: string, slug: string): Promise<Team[]> {
-  const r = await getJSON<any>(`${SITE}/${sportByKey(sport).espn}/${slug}/teams`, 24 * 3600_000);
-  return (r.sports?.[0]?.leagues?.[0]?.teams ?? []).map((t: any) => mapTeam(t.team));
+  const groups = await getStandings(sport, slug);
+  return groups.flatMap((g) => g.rows.map((r) => r.team));
 }
