@@ -1,4 +1,4 @@
-/* "In form": the best average DiDa rating over each player's last 3 league matches, top 5 leagues.
+/* "Top Form": the best average DiDa rating over each player's last N league matches, top 5 leagues.
  * Pass 1 rates every player from the match summaries (box score, one request per match).
  * Pass 2 re-rates the 40 best with the full DiDa rating (ESPN per-player detail), then ranks the top 10. */
 import { getLeagueMatchDays, getMatchLineupsQuick, getPlayerMatchLine, leagueFromIndex, getLeagues } from './espn';
@@ -20,22 +20,35 @@ async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Prom
 
 const avg = (xs: number[]) => xs.reduce((t, x) => t + x, 0) / xs.length;
 
-let memo: { at: number; key: string; rows: FormRow[] } | undefined;
+const memo = new Map<string, { at: number; rows: FormRow[] }>();
+const TTL = 30 * 60_000;
 
-export async function getInForm(leagues = FORM_LEAGUES, onProgress?: (done: number, total: number) => void): Promise<FormRow[]> {
-  const key = leagues.join(',');
-  if (memo && memo.key === key && Date.now() - memo.at < 30 * 60_000) return memo.rows;
+export function peekInForm(n: number, leagues = FORM_LEAGUES): FormRow[] | undefined {
+  const key = `dida.form.${n}.${leagues.join(',')}`;
+  const m = memo.get(key);
+  if (m && Date.now() - m.at < TTL) return m.rows;
+  try {
+    const c = JSON.parse(localStorage.getItem(key) ?? 'null');
+    if (c && Date.now() - c.at < TTL) { memo.set(key, c); return c.rows; }
+  } catch { /* ignore */ }
+  return undefined;
+}
+
+export async function getInForm(n = 3, leagues = FORM_LEAGUES, onProgress?: (done: number, total: number) => void): Promise<FormRow[]> {
+  const key = `dida.form.${n}.${leagues.join(',')}`;
+  const cached = peekInForm(n, leagues);
+  if (cached) return cached;
   await getLeagues('soccer').catch(() => undefined);
 
-  // Each team's last 3 finished league matches.
+  // Each team's last n finished league matches.
   const matches: Match[] = [];
   for (const slug of leagues) {
-    const ms = (await getLeagueMatchDays('soccer', slug, 'prev', 12, 600_000).catch(() => [] as Match[])).filter((m) => m.state === 'post');
+    const ms = (await getLeagueMatchDays('soccer', slug, 'prev', n * 4 + 2, 600_000).catch(() => [] as Match[])).filter((m) => m.state === 'post');
     const byTeam = new Map<string, Match[]>();
     for (const m of ms.sort((a, b) => b.date.localeCompare(a.date))) {
       for (const t of [m.home.team.id, m.away.team.id]) {
         const l = byTeam.get(t) ?? [];
-        if (l.length < 3) l.push(m);
+        if (l.length < n) l.push(m);
         byTeam.set(t, l);
       }
     }
@@ -75,10 +88,10 @@ export async function getInForm(leagues = FORM_LEAGUES, onProgress?: (done: numb
     }
   });
 
-  // Last 3 appearances; require all 3 (the window is each team's last 3, so: played every one).
+  // Last n appearances; require all n (the window is each team's last n, so: played every one).
   const cands = [...players.values()]
-    .map((a) => ({ ...a, games: a.games.sort((x, y) => y.date.localeCompare(x.date)).slice(0, 3) }))
-    .filter((a) => a.games.length === 3)
+    .map((a) => ({ ...a, games: a.games.sort((x, y) => y.date.localeCompare(x.date)).slice(0, n) }))
+    .filter((a) => a.games.length === n)
     .sort((x, y) => avg(y.games.map((g) => g.rating)) - avg(x.games.map((g) => g.rating)))
     .slice(0, 40);
 
@@ -102,6 +115,8 @@ export async function getInForm(leagues = FORM_LEAGUES, onProgress?: (done: numb
     }))
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 10);
-  memo = { at: Date.now(), key, rows };
+  const entry = { at: Date.now(), rows };
+  memo.set(key, entry);
+  try { localStorage.setItem(key, JSON.stringify(entry)); } catch { /* ignore */ }
   return rows;
 }

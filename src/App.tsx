@@ -13,6 +13,7 @@ import { Settings } from './pages/Settings';
 import { Scorers } from './pages/Scorers';
 import { ClubPage, TeamPage } from './pages/Team';
 import { PlayerPage } from './pages/Player';
+import { TopForm } from './pages/TopForm';
 
 function Theme() {
   const { theme } = settings.use();
@@ -27,7 +28,7 @@ function Theme() {
 function TopBar() {
   const loc = useLocation();
   const nav = useNavigate();
-  const isRoot = ['/', '/following', '/leagues', '/settings', '/club', '/scorers'].includes(loc.pathname);
+  const isRoot = ['/', '/following', '/leagues', '/settings', '/club', '/scorers', '/form'].includes(loc.pathname);
   return (
     <header className="topbar">
       {isRoot ? (
@@ -53,6 +54,7 @@ function BottomNav() {
       <NavLink to="/" end><Icon name="ball" /><span>Scores</span></NavLink>
       <NavLink to="/club"><Crest src={team.logo} name={team.name} size={22} /><span>{team.name.length > 10 ? 'My club' : team.name}</span></NavLink>
       <NavLink to="/scorers"><Icon name="boot" /><span>Scorers</span></NavLink>
+      <NavLink to="/form"><Icon name="flame" /><span>Top Form</span></NavLink>
       <NavLink to="/following"><Icon name="star" /><span>Following</span></NavLink>
       <NavLink to="/leagues"><Icon name="trophy" /><span>Leagues</span></NavLink>
     </nav>
@@ -67,6 +69,7 @@ function SideBar() {
         <NavLink to="/" end><Icon name="ball" /> Scores</NavLink>
         <NavLink to="/club"><Icon name="shield" /> My club</NavLink>
         <NavLink to="/scorers"><Icon name="boot" /> Golden Shoe</NavLink>
+        <NavLink to="/form"><Icon name="flame" /> Top Form</NavLink>
         <NavLink to="/following"><Icon name="star" /> Following</NavLink>
         <NavLink to="/leagues"><Icon name="trophy" /> Leagues</NavLink>
       </nav>
@@ -118,6 +121,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/club" element={<ClubPage />} />
             <Route path="/scorers" element={<Scorers />} />
+            <Route path="/form" element={<TopForm />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
