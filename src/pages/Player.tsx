@@ -113,16 +113,20 @@ const GK_ROWS: Row[] = [
 
 function SeasonDetail({ p, league }: { p: PlayerProfile; league: string }) {
   const { data, loading } = usePoll(() => getPlayerSeasonDetail(p.id, league), [p.id, league], () => 0);
+  const [all, setAll] = useState(false);
   if (loading && !data) return <Loading />;
   if (!data) return <Empty title="No detailed stats for this competition" />;
-  const rows = /goalkeeper/i.test(p.position ?? '') ? [...GK_ROWS, ...SEASON_ROWS.slice(0, 2), SEASON_ROWS[10]] : SEASON_ROWS;
+  const rows = (/goalkeeper/i.test(p.position ?? '') ? [...GK_ROWS, ...SEASON_ROWS.slice(0, 2), SEASON_ROWS[10]] : SEASON_ROWS)
+    .map(([label, f]) => [label, f(data)] as const)
+    .filter(([, v]) => v != null);
+  const shown = all ? rows : rows.slice(0, 10);
   return (
-    <dl className="psheet-stats season-stats">
-      {rows.map(([label, f]) => {
-        const v = f(data);
-        return v == null ? null : <div key={label}><dt>{label}</dt><dd>{v}</dd></div>;
-      })}
-    </dl>
+    <>
+      <dl className="psheet-stats season-stats">
+        {shown.map(([label, v]) => <div key={label}><dt>{label}</dt><dd>{v}</dd></div>)}
+      </dl>
+      {rows.length > shown.length && <button className="chip more-btn" onClick={() => setAll(true)}>Show all {rows.length} stats</button>}
+    </>
   );
 }
 

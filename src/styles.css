@@ -587,3 +587,4 @@ a.plink:hover { text-decoration: underline; }
 }
 .psheet-link { justify-self: start; height: auto; min-height: 32px; white-space: normal; padding: 6px 12px; font-size: 12.5px; }
 a.pp { color: inherit; }
+.more-btn { margin-top: 10px; }
