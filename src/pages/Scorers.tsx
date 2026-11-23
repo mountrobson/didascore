@@ -29,27 +29,25 @@ function rankOf(list: Scorer[], i: number, key: (s: Scorer) => number) {
 
 function ScorerRow({ s, rank, shoe, mine }: { s: Scorer; rank: number; shoe: boolean; mine: boolean }) {
   const { data: bio } = usePoll(() => getPlayerBio(s.id), [s.id], () => 0);
-  const facts = [bio?.age ? `${bio.age} yrs` : undefined, bio?.position].filter(Boolean).join(' · ');
-  const perGame = s.matches ? ` · ${(s.goals / s.matches).toFixed(2)}/game` : '';
   return (
     <tr className={mine ? 'hl' : ''}>
       <td className="c-rank"><span className="rank">{rank}</span></td>
-      <td className="c-team">
+      <td className="c-team c-sticky">
         <Link to={playerHref(s.id, s.league)} className="scorer">
-          <Avatar id={s.id} name={s.name} birthYear={bio?.birthYear} crest={s.team.logo} size={40} wait={!bio} />
+          <Avatar id={s.id} name={s.name} birthYear={bio?.birthYear} crest={s.team.logo} size={36} wait={!bio} />
           <div className="scorer-txt">
             <span className="scorer-name">{s.name}</span>
-            <span className="scorer-bio">
-              {bio?.flag && <img src={smallLogo(bio.flag, 40)} alt="" />}
-              {[bio?.nationality, facts].filter(Boolean).join(' · ') || '\u00a0'}
-            </span>
-            <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}{perGame}</span>
+            <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}</span>
           </div>
         </Link>
       </td>
-      <td className="hide-xs">{s.matches ?? ''}</td>
+      <td className="c-nat" title={bio?.nationality}>{bio?.flag ? <img src={smallLogo(bio.flag, 40)} alt={bio.nationality ?? ''} /> : ''}</td>
+      <td>{bio?.age ?? ''}</td>
+      <td>{bio?.position ?? ''}</td>
+      <td>{s.matches ?? ''}</td>
       <td className={shoe ? '' : 'c-pts'}>{s.goals}</td>
       <td>{s.assists ?? ''}</td>
+      <td className="muted">{s.matches ? (s.goals / s.matches).toFixed(2) : ''}</td>
       {shoe && <td className="c-pts">{(s.points ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>}
     </tr>
   );
@@ -95,15 +93,19 @@ export function Scorers() {
       {error && !data && <ErrorBox error={error} onRetry={refresh} />}
       {data && !data.length && <Empty title="No scorers yet" />}
       {data && data.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap scroll-x">
           <table className="standings scorers">
             <thead>
               <tr>
                 <th className="c-rank">#</th>
-                <th className="c-team">Player</th>
-                <th className="hide-xs">MP</th>
+                <th className="c-team c-sticky">Player</th>
+                <th title="Nationality">Nat</th>
+                <th>Age</th>
+                <th title="Position">Pos</th>
+                <th title="Matches played">MP</th>
                 <th>G</th>
                 <th>A</th>
+                <th title="Goals per game">G/G</th>
                 {shoe && <th className="c-pts">Pts</th>}
               </tr>
             </thead>
