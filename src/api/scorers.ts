@@ -46,9 +46,11 @@ export const GOLDEN_SHOE_LEAGUES: { slug: string; factor: number }[] = [
   { slug: 'rus.1', factor: 1 },
 ];
 
-export async function getGoldenShoe(): Promise<Scorer[]> {
+export const TOP5_LEAGUES = ['eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1'];
+
+export async function getGoldenShoe(top5Only = false): Promise<Scorer[]> {
   const lists = await Promise.all(
-    GOLDEN_SHOE_LEAGUES.map(({ slug, factor }) =>
+    GOLDEN_SHOE_LEAGUES.filter((l) => !top5Only || TOP5_LEAGUES.includes(l.slug)).map(({ slug, factor }) =>
       getTopScorers(slug)
         .then((xs) => xs.map((x) => ({ ...x, factor, points: x.goals * factor })))
         .catch(() => [] as Scorer[])

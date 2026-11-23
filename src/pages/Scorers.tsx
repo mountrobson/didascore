@@ -4,7 +4,9 @@ import { getGoldenShoe, getTopScorers } from '../api/scorers';
 import type { Scorer } from '../api/types';
 import { Crest } from '../components/Crest';
 import { Empty, ErrorBox, Loading } from '../components/States';
-import { club } from '../lib/store';
+import { club, createStore } from '../lib/store';
+
+const shoePrefs = createStore<{ top5: boolean }>('dida.shoe', { top5: false });
 import { usePoll } from '../lib/usePoll';
 
 const TABS: [string, string][] = [
@@ -29,9 +31,10 @@ export function Scorers() {
   const tab = params.get('t') || 'shoe';
   const { team: myClub } = club.use();
   const shoe = tab === 'shoe';
+  const { top5 } = shoePrefs.use();
   const { data, error, loading, refresh } = usePoll<Scorer[]>(
-    () => (shoe ? getGoldenShoe() : getTopScorers(tab)),
-    [tab],
+    () => (shoe ? getGoldenShoe(top5) : getTopScorers(tab)),
+    [tab, top5],
     () => 600_000
   );
   const key = (s: Scorer) => (shoe ? s.points ?? 0 : s.goals);
@@ -51,6 +54,14 @@ export function Scorers() {
           <button key={k} className={`chip ${tab === k ? 'sel' : ''}`} onClick={() => setParams(k === 'shoe' ? {} : { t: k }, { replace: true })}>{label}</button>
         ))}
       </div>
+      {shoe && (
+        <div className="pad-x">
+          <div className="seg" role="group" aria-label="Leagues in the race">
+            <button className={!top5 ? 'sel' : ''} aria-pressed={!top5} onClick={() => shoePrefs.set({ top5: false })}>All leagues</button>
+            <button className={top5 ? 'sel' : ''} aria-pressed={top5} onClick={() => shoePrefs.set({ top5: true })}>Top 5 leagues</button>
+          </div>
+        </div>
+      )}
       {loading && !data && <Loading />}
       {error && !data && <ErrorBox error={error} onRetry={refresh} />}
       {data && !data.length && <Empty title="No scorers yet" />}
