@@ -29,7 +29,8 @@ function rankOf(list: Scorer[], i: number, key: (s: Scorer) => number) {
 
 function ScorerRow({ s, rank, shoe, mine }: { s: Scorer; rank: number; shoe: boolean; mine: boolean }) {
   const { data: bio } = usePoll(() => getPlayerBio(s.id), [s.id], () => 0);
-  const facts = [bio?.age ? `${bio.age} yrs` : undefined, bio?.position, s.matches ? `${(s.goals / s.matches).toFixed(2)} G/MP` : undefined].filter(Boolean).join(' · ');
+  const facts = [bio?.age ? `${bio.age} yrs` : undefined, bio?.position].filter(Boolean).join(' · ');
+  const perGame = s.matches ? ` · ${(s.goals / s.matches).toFixed(2)}/game` : '';
   return (
     <tr className={mine ? 'hl' : ''}>
       <td className="c-rank"><span className="rank">{rank}</span></td>
@@ -42,7 +43,7 @@ function ScorerRow({ s, rank, shoe, mine }: { s: Scorer; rank: number; shoe: boo
               {bio?.flag && <img src={smallLogo(bio.flag, 40)} alt="" />}
               {[bio?.nationality, facts].filter(Boolean).join(' · ') || '\u00a0'}
             </span>
-            <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}</span>
+            <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}{perGame}</span>
           </div>
         </Link>
       </td>
