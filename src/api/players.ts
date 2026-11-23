@@ -43,6 +43,7 @@ export interface PlayerProfile {
   position?: string;
   age?: number;
   dob?: string;
+  birthYear?: number;
   height?: string;
   weight?: string;
   nationality?: string;
@@ -139,6 +140,7 @@ export async function getPlayer(id: string): Promise<PlayerProfile> {
     position: a.position?.displayName,
     age: a.age,
     dob: a.displayDOB,
+    birthYear: Number(String(a.displayDOB ?? '').match(/(\d{4})$/)?.[1]) || undefined,
     height: a.displayHeight,
     weight: a.displayWeight,
     nationality: a.citizenship ?? a.flag?.alt,
@@ -184,4 +186,50 @@ export function seasonYear(d = new Date()) {
 /** The player's DiDa rating and match line in one game. */
 export async function getPlayerInMatch(playerId: string, g: { id: string; league?: string }): Promise<LineupPlayer | undefined> {
   return (await getPlayerMatchLine('soccer', g.league ?? 'all', g.id, playerId))?.player;
+}
+
+// ---------- light bio + photo (for lists) ----------
+
+export interface PlayerBio { age?: number; birthYear?: number; nationality?: string; flag?: string; position?: string }
+
+export async function getPlayerBio(id: string): Promise<PlayerBio> {
+  const bio = await getJSON<any>(`${ATH}/${id}`, 24 * 3600_000);
+  const a = bio.athlete ?? bio;
+  const y = String(a.displayDOB ?? '').match(/(\d{4})$/);
+  return {
+    age: a.age,
+    birthYear: y ? Number(y[1]) : undefined,
+    nationality: a.citizenship ?? a.flag?.alt,
+    flag: a.flag?.href,
+    position: a.position?.abbreviation,
+  };
+}
+
+/**
+ * Player photo from Wikipedia (free, CC-licensed images via the Wikimedia REST API; ESPN has no football headshots).
+ * Only accepted when the article is about a footballer born in the same year, so namesakes don't slip through.
+ * Results (including misses) are remembered for a week in localStorage.
+ */
+export async function getPlayerPhoto(id: string, name: string, birthYear?: number): Promise<string | undefined> {
+  const key = `dida.photo.${id}`;
+  try {
+    const c = JSON.parse(localStorage.getItem(key) ?? 'null');
+    if (c && Date.now() - c.t < 7 * 86400_000) return c.u || undefined;
+  } catch { /* ignore */ }
+  const titles = [name, `${name} (footballer)`, ...(birthYear ? [`${name} (footballer, born ${birthYear})`] : [])];
+  let url: string | undefined;
+  for (const t of titles) {
+    try {
+      const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, '_'))}`);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const desc = String(j.description ?? '');
+      if (!/football|soccer/i.test(desc)) continue;
+      if (birthYear && /born \d{4}/.test(desc) && !desc.includes(String(birthYear))) continue;
+      url = j.thumbnail?.source;
+      break;
+    } catch { /* network */ }
+  }
+  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), u: url ?? '' })); } catch { /* ignore */ }
+  return url;
 }

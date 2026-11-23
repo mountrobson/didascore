@@ -588,3 +588,10 @@ a.plink:hover { text-decoration: underline; }
 .psheet-link { justify-self: start; height: auto; min-height: 32px; white-space: normal; padding: 6px 12px; font-size: 12.5px; }
 a.pp { color: inherit; }
 .more-btn { margin-top: 10px; }
+.avatar { position: relative; flex: none; display: inline-block; border-radius: 50%; }
+.avatar > img:first-child, .avatar-init { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: 50% 15%; display: grid; place-items: center; background: var(--team, var(--surface-2)); color: var(--text); font-weight: 700; font-family: 'Space Grotesk', Inter, sans-serif; box-shadow: inset 0 0 0 1px var(--line); }
+.avatar-crest { position: absolute; right: -3px; bottom: -3px; object-fit: contain; background: var(--surface); border-radius: 50%; padding: 1.5px; box-shadow: 0 0 0 1px var(--line); }
+.scorer-bio { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scorer-bio img { width: 14px; height: 10px; object-fit: cover; border-radius: 1.5px; flex: none; }
+.player-head .avatar-init { color: #fff; }
+a.scorer { color: inherit; }

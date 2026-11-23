@@ -2,7 +2,8 @@ import { playerHref } from '../lib/links';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getGoldenShoe, getTopScorers } from '../api/scorers';
 import type { Scorer } from '../api/types';
-import { Crest } from '../components/Crest';
+import { Avatar, smallLogo } from '../components/Avatar';
+import { getPlayerBio } from '../api/players';
 import { Empty, ErrorBox, Loading } from '../components/States';
 import { club, createStore } from '../lib/store';
 
@@ -24,6 +25,33 @@ function rankOf(list: Scorer[], i: number, key: (s: Scorer) => number) {
   let r = i;
   while (r > 0 && key(list[r - 1]) === key(list[i])) r--;
   return r + 1;
+}
+
+function ScorerRow({ s, rank, shoe, mine }: { s: Scorer; rank: number; shoe: boolean; mine: boolean }) {
+  const { data: bio } = usePoll(() => getPlayerBio(s.id), [s.id], () => 0);
+  const facts = [bio?.age ? `${bio.age} yrs` : undefined, bio?.position, s.matches ? `${(s.goals / s.matches).toFixed(2)} G/MP` : undefined].filter(Boolean).join(' · ');
+  return (
+    <tr className={mine ? 'hl' : ''}>
+      <td className="c-rank"><span className="rank">{rank}</span></td>
+      <td className="c-team">
+        <Link to={playerHref(s.id, s.league)} className="scorer">
+          <Avatar id={s.id} name={s.name} birthYear={bio?.birthYear} crest={s.team.logo} size={40} wait={!bio} />
+          <div className="scorer-txt">
+            <span className="scorer-name">{s.name}</span>
+            <span className="scorer-bio">
+              {bio?.flag && <img src={smallLogo(bio.flag, 40)} alt="" />}
+              {[bio?.nationality, facts].filter(Boolean).join(' · ') || '\u00a0'}
+            </span>
+            <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}</span>
+          </div>
+        </Link>
+      </td>
+      <td className="hide-xs">{s.matches ?? ''}</td>
+      <td className={shoe ? '' : 'c-pts'}>{s.goals}</td>
+      <td>{s.assists ?? ''}</td>
+      {shoe && <td className="c-pts">{(s.points ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>}
+    </tr>
+  );
 }
 
 export function Scorers() {
@@ -73,33 +101,20 @@ export function Scorers() {
                 <th className="c-rank">#</th>
                 <th className="c-team">Player</th>
                 <th className="hide-xs">MP</th>
-                <th>{shoe ? 'G' : 'Goals'}</th>
+                <th>G</th>
+                <th>A</th>
                 {shoe && <th className="c-pts">Pts</th>}
               </tr>
             </thead>
             <tbody>
               {data.map((s, i) => (
-                <tr key={`${s.league}-${s.id}`} className={s.team.id === myClub.id ? 'hl' : ''}>
-                  <td className="c-rank"><span className="rank">{rankOf(data, i, key)}</span></td>
-                  <td className="c-team">
-                    <div className="scorer">
-                      <Crest src={s.team.logo} name={s.team.name} size={20} />
-                      <div className="scorer-txt">
-                        <Link to={playerHref(s.id, s.league)} className="scorer-name plink">{s.name}</Link>
-                        <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="hide-xs">{s.matches ?? ''}</td>
-                  <td className={shoe ? '' : 'c-pts'}>{s.goals}</td>
-                  {shoe && <td className="c-pts">{(s.points ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>}
-                </tr>
+                <ScorerRow key={`${s.league}-${s.id}`} s={s} rank={rankOf(data, i, key)} shoe={shoe} mine={s.team.id === myClub.id} />
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <p className="footnote muted">Data from ESPN league stats. Golden Shoe weights follow the UEFA league ranking (approximate).</p>
+      <p className="footnote muted">Data from ESPN league stats. Photos from Wikipedia where available. Golden Shoe weights follow the UEFA league ranking (approximate).</p>
     </div>
   );
 }

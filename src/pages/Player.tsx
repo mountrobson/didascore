@@ -4,6 +4,7 @@ import { getPlayer, getPlayerGameLog, getPlayerInMatch, getPlayerSeasonDetail, t
 import { leagueFromIndex, getLeagues } from '../api/espn';
 import type { LineupPlayer } from '../api/types';
 import { Crest } from '../components/Crest';
+import { Avatar } from '../components/Avatar';
 import { Empty, ErrorBox, Loading } from '../components/States';
 import { fmtShortDate, fmtTime } from '../lib/dates';
 import { ratingBand } from '../lib/rating';
@@ -11,7 +12,6 @@ import { settings } from '../lib/store';
 import { usePoll } from '../lib/usePoll';
 
 
-const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const pct = (v?: number) => (v == null ? '–' : `${Math.round(v * 100)}%`);
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
@@ -156,10 +156,7 @@ export function PlayerPage() {
   return (
     <div className="player-page">
       <div className="page-head player-head" style={p.team?.color ? { ['--team' as string]: p.team.color } : undefined}>
-        <div className="p-avatar" aria-hidden>
-          <span>{initials(p.name)}</span>
-          {p.team?.logo && <img className="p-avatar-crest" src={p.team.logo} alt="" />}
-        </div>
+        <Avatar id={p.id} name={p.name} birthYear={p.birthYear} crest={p.team?.logo} color={p.team?.color} size={64} />
         <div className="page-title">
           <h1>{p.name}</h1>
           <span className="muted">
