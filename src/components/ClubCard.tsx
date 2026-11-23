@@ -9,6 +9,7 @@ import { club, settings } from '../lib/store';
 import { usePoll } from '../lib/usePoll';
 import { Crest } from './Crest';
 import { matchHref } from './MatchRow';
+import { playerHref } from '../lib/links';
 
 function countdown(iso: string, now: number) {
   const ms = new Date(iso).getTime() - now;
@@ -59,22 +60,22 @@ function TopFive({ league, teamId, sport, results }: { league: string; teamId: s
   );
   if (!data?.length) return null;
   return (
-    <Link to={`/scorers?t=${league}`} className="club-top">
-      <div className="club-top-head">
-        <span>Top 5 · {leagueFromIndex(league)?.short ?? league}</span>
+    <div className="club-top">
+      <Link to={`/scorers?t=${league}`} className="club-top-head">
+        <span>Top 5 · {leagueFromIndex(league)?.short ?? league} ›</span>
         <span className="club-top-cols"><i>G</i><i>A</i><i title="Average DiDa rating, last 5 matches">Form</i></span>
-      </div>
+      </Link>
       {data.map((c) => (
-        <div className="club-top-row" key={c.id}>
+        <Link to={playerHref(c.id, league)} className="club-top-row" key={c.id}>
           <span className="club-top-name">{c.name}</span>
           <span className="club-top-cols">
             <b>{c.goals}</b>
             <b>{c.assists}</b>
             {c.form != null ? <span className={`rating ${ratingBand(c.form)}`} title={`Average over ${c.formGames} match${c.formGames === 1 ? '' : 'es'}`}>{c.form.toFixed(1)}</span> : <span className="rating none">–</span>}
           </span>
-        </div>
+        </Link>
       ))}
-    </Link>
+    </div>
   );
 }
 

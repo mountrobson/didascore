@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { playerHref } from '../lib/links';
 import type { Lineup, LineupPlayer } from '../api/types';
 import { ratingBand } from '../lib/rating';
 
@@ -42,9 +44,9 @@ const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 
 const dist = (a: string, b: string) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
 const isLight = (hex: string) => { const [r, g, b] = rgb(hex); return 0.299 * r + 0.587 * g + 0.114 * b > 170; };
 
-function Dot({ p, color }: { p: LineupPlayer; color: string }) {
+function Dot({ p, color, league }: { p: LineupPlayer; color: string; league: string }) {
   return (
-    <div className="pp">
+    <Link to={playerHref(p.id, league)} className="pp">
       <span className="pp-shirt" style={{ background: color, color: isLight(color) ? '#0b0f14' : '#fff', textShadow: isLight(color) ? 'none' : undefined }}>
         {p.jersey}
         {p.goals > 0 && <span className="pp-badge goal" title={`${p.goals} goal${p.goals > 1 ? 's' : ''}`}>{p.goals > 1 ? p.goals : ''}</span>}
@@ -53,11 +55,11 @@ function Dot({ p, color }: { p: LineupPlayer; color: string }) {
       </span>
       <span className="pp-name">{p.short}</span>
       {p.rating != null && <span className={`rating sm ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span>}
-    </div>
+    </Link>
   );
 }
 
-export function Pitch({ home, away }: { home: Lineup; away: Lineup }) {
+export function Pitch({ home, away, league }: { home: Lineup; away: Lineup; league: string }) {
   const hl = lines(home);
   const al = lines(away);
   if (!hl.length || !al.length) return null;
@@ -70,12 +72,12 @@ export function Pitch({ home, away }: { home: Lineup; away: Lineup }) {
       <div className="pitch-lines" aria-hidden><span className="mid" /><span className="circle" /><span className="box top" /><span className="box bottom" /></div>
       <div className="half">
         {hl.map((row, i) => (
-          <div className="prow" key={i}>{row.slice().reverse().map((p) => <Dot key={p.id} p={p} color={hc} />)}</div>
+          <div className="prow" key={i}>{row.slice().reverse().map((p) => <Dot key={p.id} p={p} color={hc} league={league} />)}</div>
         ))}
       </div>
       <div className="half away">
         {al.slice().reverse().map((row, i) => (
-          <div className="prow" key={i}>{row.map((p) => <Dot key={p.id} p={p} color={ac} />)}</div>
+          <div className="prow" key={i}>{row.map((p) => <Dot key={p.id} p={p} color={ac} league={league} />)}</div>
         ))}
       </div>
     </div>

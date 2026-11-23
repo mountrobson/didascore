@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { playerHref } from '../lib/links';
+import { Link, useParams } from 'react-router-dom';
 import { getTopScorers } from '../api/scorers';
 import { getTeamSchedule } from '../api/espn';
 import { Crest } from '../components/Crest';
@@ -22,7 +23,7 @@ function ClubScorers({ league, teamId }: { league: string; teamId: string }) {
       <div className="ghead static"><span className="gname">Top scorers · {mine[0].leagueName}</span></div>
       <ul className="scorer-list">
         {mine.map((s) => (
-          <li key={s.id}><span>{s.name}</span><span className="muted">{s.matches != null ? `${s.matches} MP` : ''}</span><strong>{s.goals}</strong></li>
+          <li key={s.id}><Link to={playerHref(s.id, league)} className="plink">{s.name}</Link><span className="muted">{s.matches != null ? `${s.matches} MP` : ''}</span><strong>{s.goals}</strong></li>
         ))}
       </ul>
     </section>

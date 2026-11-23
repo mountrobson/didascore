@@ -12,6 +12,7 @@ import { MatchPage } from './pages/Match';
 import { Settings } from './pages/Settings';
 import { Scorers } from './pages/Scorers';
 import { ClubPage, TeamPage } from './pages/Team';
+import { PlayerPage } from './pages/Player';
 
 function Theme() {
   const { theme } = settings.use();
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="/match/:sport/:league/:id" element={<MatchPage />} />
             <Route path="/league/:sport/:slug" element={<LeaguePage />} />
             <Route path="/team/:sport/:league/:id" element={<TeamPage />} />
+            <Route path="/player/:sport/:league/:id" element={<PlayerPage />} />
             <Route path="/following" element={<Following />} />
             <Route path="/leagues" element={<Leagues />} />
             <Route path="/settings" element={<Settings />} />

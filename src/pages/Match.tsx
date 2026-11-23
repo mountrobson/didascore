@@ -11,6 +11,7 @@ import { fmtLongDate, fmtShortDate, fmtTime } from '../lib/dates';
 import { ratingBand } from '../lib/rating';
 import { favorites, settings, toggleMatch, toggleTeam } from '../lib/store';
 import { usePoll } from '../lib/usePoll';
+import { playerHref } from '../lib/links';
 
 type Tab = 'summary' | 'stats' | 'lineups' | 'table' | 'form';
 
@@ -24,7 +25,13 @@ function Kind({ i }: { i: Incident }) {
   return <span className={`ik ik-${i.kind}`} aria-hidden>{ICON[i.kind]}</span>;
 }
 
+function PName({ id, name, league, className }: { id?: string; name?: string; league: string; className?: string }) {
+  if (!name) return null;
+  return id ? <Link to={playerHref(id, league)} className={`plink ${className ?? ''}`}>{name}</Link> : <span className={className}>{name}</span>;
+}
+
 function Timeline({ d }: { d: MatchDetail }) {
+  const lg = d.league.slug;
   const items = d.incidents.filter((i) => i.kind !== 'other');
   if (!items.length) return <Empty title={d.match.state === 'pre' ? 'Match not started yet' : 'No events yet'} />;
   return (
@@ -32,14 +39,14 @@ function Timeline({ d }: { d: MatchDetail }) {
       {items.map((i, idx) => {
         if (i.kind === 'period') return <li key={idx} className="tl-period"><span>{i.text.split(',')[0].replace(/\.$/, '')}</span></li>;
         const label = i.kind === 'sub' ? (
-          <><span className="sub-in">{i.player}</span>{i.secondary && <span className="sub-out">{i.secondary}</span>}</>
+          <><PName className="sub-in" id={i.playerId} name={i.player} league={lg} />{i.secondary && <PName className="sub-out" id={i.secondaryId} name={i.secondary} league={lg} />}</>
         ) : (
           <>
-            <span className="tl-player">{i.player ?? i.text}</span>
+            {i.player ? <PName className="tl-player" id={i.playerId} name={i.player} league={lg} /> : <span className="tl-player">{i.text}</span>}
             {i.kind === 'own-goal' && <span className="tl-sub">Own goal</span>}
             {i.kind === 'penalty-goal' && <span className="tl-sub">Penalty</span>}
             {i.kind === 'penalty-miss' && <span className="tl-sub">Missed penalty</span>}
-            {i.kind === 'goal' && i.secondary && <span className="tl-sub">Assist: {i.secondary}</span>}
+            {i.kind === 'goal' && i.secondary && <span className="tl-sub">Assist: <PName id={i.secondaryId} name={i.secondary} league={lg} /></span>}
           </>
         );
         return (
@@ -99,10 +106,11 @@ const DETAIL_ROWS: [string, (d: Record<string, number>) => string | null][] = [
   ['Saves', (d) => (d.saves ? String(d.saves) : null)],
 ];
 
-function PlayerSheet({ p }: { p: LineupPlayer }) {
+function PlayerSheet({ p, league }: { p: LineupPlayer; league: string }) {
   const d = p.detail;
   return (
     <div className="psheet">
+      <Link to={playerHref(p.id, league)} className="chip psheet-link">{p.name}: player page, season stats and recent form →</Link>
       {d && (
         <dl className="psheet-stats">
           {DETAIL_ROWS.map(([label, f]) => {
@@ -123,14 +131,14 @@ function PlayerSheet({ p }: { p: LineupPlayer }) {
   );
 }
 
-function PlayerList({ l, bench }: { l: Lineup; bench: boolean }) {
+function PlayerList({ l, bench, league }: { l: Lineup; bench: boolean; league: string }) {
   const [open, setOpen] = useState<string>();
   const ps = l.players.filter((p) => p.starter !== bench).sort((a, b) => (a.formationPlace ?? 99) - (b.formationPlace ?? 99));
   return (
     <ul className="plist">
       {ps.map((p) => (
         <li key={p.id} className={`${p.subbedIn ? 'came-on' : ''} ${open === p.id ? 'open' : ''}`}>
-          <button className="prow-btn" onClick={() => setOpen(open === p.id ? undefined : p.id)} aria-expanded={open === p.id} disabled={p.rating == null}>
+          <button className="prow-btn" onClick={() => setOpen(open === p.id ? undefined : p.id)} aria-expanded={open === p.id}>
             <span className="pl-num">{p.jersey}</span>
             <span className="pl-name">{p.name}</span>
             <span className="pl-flags">
@@ -143,7 +151,7 @@ function PlayerList({ l, bench }: { l: Lineup; bench: boolean }) {
             <span className="pl-pos">{p.position === 'SUB' ? '' : p.position}</span>
             {p.rating != null ? <span className={`rating ${ratingBand(p.rating)}`}>{p.rating.toFixed(1)}</span> : <span />}
           </button>
-          {open === p.id && <PlayerSheet p={p} />}
+          {open === p.id && <PlayerSheet p={p} league={league} />}
         </li>
       ))}
     </ul>
@@ -159,13 +167,13 @@ function Lineups({ d }: { d: MatchDetail }) {
         <span><Crest src={home.team.logo} name={home.team.name} size={18} /> {home.formation}</span>
         <span>{away.formation} <Crest src={away.team.logo} name={away.team.name} size={18} /></span>
       </div>
-      <Pitch home={home} away={away} />
+      <Pitch home={home} away={away} league={d.league.slug} />
       <div className="lineup-cols">
         {[home, away].map((l) => (
           <div key={l.side}>
             <h3 className="col-title">{l.team.short}</h3>
-            <PlayerList l={l} bench={false} />
-            {l.players.some((p) => !p.starter) && (<><h4 className="col-sub">Substitutes</h4><PlayerList l={l} bench /></>)}
+            <PlayerList l={l} bench={false} league={d.league.slug} />
+            {l.players.some((p) => !p.starter) && (<><h4 className="col-sub">Substitutes</h4><PlayerList l={l} bench league={d.league.slug} /></>)}
           </div>
         ))}
       </div>
@@ -182,15 +190,17 @@ function TopPlayers({ d }: { d: MatchDetail }) {
       <h3 className="col-title">Top rated players</h3>
       <ul className="plist">
         {top.map(({ p, team }, i) => (
-          <li key={p.id} className="tp-row">
+          <li key={p.id}>
+           <Link to={playerHref(p.id, d.league.slug)} className="tp-row">
             <Crest src={team.logo} name={team.name} size={18} />
             <span className="pl-name">{p.name}{i === 0 && d.match.state === 'post' && <span className="potm">Player of the match</span>}</span>
             <span className="pl-flags">{p.goals > 0 && <span>⚽{p.goals > 1 ? `×${p.goals}` : ''}</span>}{(p.stats.goalAssists ?? 0) > 0 && <span className="muted">A{p.stats.goalAssists > 1 ? `×${p.stats.goalAssists}` : ''}</span>}</span>
             <span className={`rating ${ratingBand(p.rating!)}`}>{p.rating!.toFixed(1)}</span>
+           </Link>
           </li>
         ))}
       </ul>
-      <p className="footnote muted">DiDa rating from ESPN player data: goals, assists, xG and xA, key passes, dribbles, passing, duels, defending, goalkeeping and the result. Tap a player under Lineups to see the breakdown.</p>
+      <p className="footnote muted">DiDa rating from ESPN player data: goals, assists, xG and xA, key passes, dribbles, passing, duels, defending, goalkeeping and the result. Tap a player for their page; under Lineups you also get the rating breakdown.</p>
     </div>
   );
 }

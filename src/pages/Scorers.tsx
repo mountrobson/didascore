@@ -1,4 +1,5 @@
-import { useSearchParams } from 'react-router-dom';
+import { playerHref } from '../lib/links';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getGoldenShoe, getTopScorers } from '../api/scorers';
 import type { Scorer } from '../api/types';
 import { Crest } from '../components/Crest';
@@ -73,7 +74,7 @@ export function Scorers() {
                     <div className="scorer">
                       <Crest src={s.team.logo} name={s.team.name} size={20} />
                       <div className="scorer-txt">
-                        <span className="scorer-name">{s.name}</span>
+                        <Link to={playerHref(s.id, s.league)} className="scorer-name plink">{s.name}</Link>
                         <span className="scorer-sub">{s.team.short}{shoe && s.leagueName ? ` · ${s.leagueName}` : ''}</span>
                       </div>
                     </div>

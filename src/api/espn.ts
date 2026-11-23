@@ -44,7 +44,7 @@ function mapLeague(l: any): League {
 
 // ---------- matches ----------
 
-function mapTeam(t: any): Team {
+export function mapTeam(t: any): Team {
   return {
     id: String(t?.id ?? ''),
     name: t?.displayName || t?.name || 'TBD',
@@ -304,6 +304,8 @@ function mapIncidents(keyEvents: any[] | undefined, homeId: string): Incident[] 
         kind,
         side: k.team?.id ? (String(k.team.id) === homeId ? 'home' : 'away') : undefined,
         player: parts[0]?.athlete?.displayName,
+        playerId: parts[0]?.athlete?.id ? String(parts[0].athlete.id) : undefined,
+        secondaryId: parts[1]?.athlete?.id ? String(parts[1].athlete.id) : undefined,
         secondary: parts[1]?.athlete?.displayName,
         text: k.shortText || k.text || k.type?.text || '',
       } as Incident;
@@ -344,6 +346,18 @@ const CORE = 'https://sports.core.api.espn.com/v2/sports';
  * Per-player detailed stats (minutes, xG, xA, key passes, dribbles, duels, passes, tackles, goals prevented…)
  * from ESPN's core API: one small request per player who played. Missing data just means no detail.
  */
+async function playerDetail(sport: string, league: string, eventId: string, teamId: string, playerId: string, ttl: number) {
+  const url = `${CORE}/${sportByKey(sport).espn}/leagues/${league}/events/${eventId}/competitions/${eventId}/competitors/${teamId}/roster/${playerId}/statistics/0`;
+  try {
+    const j = await getJSON<any>(url, ttl);
+    const d: Record<string, number> = {};
+    for (const c of j.splits?.categories ?? []) for (const x of c.stats ?? []) d[x.name] = Number(x.value ?? 0);
+    return Object.keys(d).length ? d : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function withPlayerDetail(sport: string, league: string, eventId: string, lineups: Lineup[], state: Match['state']): Promise<Lineup[]> {
   if (state === 'pre' || !league || league === 'all') return lineups;
   const ttl = state === 'in' ? 60_000 : 24 * 3600_000;
@@ -353,19 +367,40 @@ async function withPlayerDetail(sport: string, league: string, eventId: string, 
       players: await Promise.all(
         l.players.map(async (p) => {
           if (!p.starter && !p.subbedIn) return p;
-          const url = `${CORE}/${sportByKey(sport).espn}/leagues/${league}/events/${eventId}/competitions/${eventId}/competitors/${l.team.id}/roster/${p.id}/statistics/0`;
-          try {
-            const j = await getJSON<any>(url, ttl);
-            const d: Record<string, number> = {};
-            for (const c of j.splits?.categories ?? []) for (const x of c.stats ?? []) d[x.name] = Number(x.value ?? 0);
-            return Object.keys(d).length ? { ...p, detail: d } : p;
-          } catch {
-            return p;
-          }
+          const detail = await playerDetail(sport, league, eventId, l.team.id, p.id, ttl);
+          return detail ? { ...p, detail } : p;
         })
       ),
     }))
   );
+}
+
+function summaryMatch(s: any, sport: string, id: string, slug: string): Match {
+  const comp = s.header?.competitions?.[0] ?? {};
+  const lg = s.header?.league ?? {};
+  const ev = { id, uid: s.header?.uid ?? `l:${lg.id}`, date: comp.date, status: comp.status, competitions: [{ ...comp, venue: s.gameInfo?.venue, details: comp.details }] };
+  return mapEvent(ev, sport, lg.slug ?? slug);
+}
+
+/**
+ * One player's line and DiDa rating in one match: the summary plus that player's detailed stats only
+ * (cheaper than getMatchDetail, which loads every player). Undefined when the player wasn't in the squad.
+ */
+export async function getPlayerMatchLine(sport: string, leagueSlug: string, id: string, playerId: string): Promise<{ player: LineupPlayer; match: Match } | undefined> {
+  const slug = leagueSlug || 'all';
+  const s = await getJSON<any>(`${SITE}/${sportByKey(sport).espn}/${slug}/summary?event=${id}`, 3600_000);
+  const match = summaryMatch(s, sport, id, slug);
+  const league = s.header?.league?.slug ?? slug;
+  for (const l of mapLineups(s.rosters)) {
+    const p = l.players.find((x) => x.id === playerId);
+    if (!p) continue;
+    const detail = match.state !== 'pre' && (p.starter || p.subbedIn) && league !== 'all'
+      ? await playerDetail(sport, league, id, l.team.id, p.id, match.state === 'in' ? 60_000 : 24 * 3600_000)
+      : undefined;
+    const rated = rateLineups([{ ...l, players: [detail ? { ...p, detail } : p] }], match)[0].players[0];
+    return { player: rated, match };
+  }
+  return undefined;
 }
 
 function mapMini(ev: any, teamId: string): MiniResult {
@@ -384,10 +419,8 @@ function mapMini(ev: any, teamId: string): MiniResult {
 export async function getMatchDetail(sport: string, leagueSlug: string, id: string, ttl = 10_000): Promise<MatchDetail> {
   const slug = leagueSlug || 'all';
   const s = await getJSON<any>(`${SITE}/${sportByKey(sport).espn}/${slug}/summary?event=${id}`, ttl);
-  const comp = s.header?.competitions?.[0] ?? {};
   const lg = s.header?.league ?? {};
-  const ev = { id, uid: s.header?.uid ?? `l:${lg.id}`, date: comp.date, status: comp.status, competitions: [{ ...comp, venue: s.gameInfo?.venue, details: comp.details }] };
-  const match = mapEvent(ev, sport, lg.slug ?? slug);
+  const match = summaryMatch(s, sport, id, slug);
   const homeId = match.home.team.id;
   const incidents = mapIncidents(s.keyEvents, homeId);
   // Prefer the richer keyEvents goal list for the header scorers.

@@ -27,6 +27,8 @@ export interface Incident {
   side?: 'home' | 'away';
   player?: string;
   secondary?: string; // assist or player subbed off
+  playerId?: string;
+  secondaryId?: string;
   text: string;
 }
 
