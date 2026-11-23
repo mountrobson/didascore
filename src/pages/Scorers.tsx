@@ -43,12 +43,12 @@ function ScorerRow({ s, rank, shoe, mine }: { s: Scorer; rank: number; shoe: boo
       </td>
       <td className="c-nat" title={bio?.nationality}>{bio?.flag ? <img src={smallLogo(bio.flag, 40)} alt={bio.nationality ?? ''} /> : ''}</td>
       <td>{bio?.age ?? ''}</td>
-      <td>{bio?.position ?? ''}</td>
-      <td>{s.matches ?? ''}</td>
       <td className={shoe ? '' : 'c-pts'}>{s.goals}</td>
-      <td>{s.assists ?? ''}</td>
-      <td className="muted">{s.matches ? (s.goals / s.matches).toFixed(2) : ''}</td>
       {shoe && <td className="c-pts">{(s.points ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>}
+      <td>{s.assists ?? ''}</td>
+      <td>{s.matches ?? ''}</td>
+      <td className="muted">{s.matches ? (s.goals / s.matches).toFixed(2) : ''}</td>
+      <td>{bio?.position ?? ''}</td>
     </tr>
   );
 }
@@ -101,12 +101,12 @@ export function Scorers() {
                 <th className="c-team c-sticky">Player</th>
                 <th title="Nationality">Nat</th>
                 <th>Age</th>
-                <th title="Position">Pos</th>
-                <th title="Matches played">MP</th>
                 <th>G</th>
-                <th>A</th>
-                <th title="Goals per game">G/G</th>
                 {shoe && <th className="c-pts">Pts</th>}
+                <th>A</th>
+                <th title="Matches played">MP</th>
+                <th title="Goals per game">G/G</th>
+                <th title="Position">Pos</th>
               </tr>
             </thead>
             <tbody>

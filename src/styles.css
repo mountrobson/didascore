@@ -599,9 +599,11 @@ a.scorer { color: inherit; }
 .table-wrap.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .standings.scorers { min-width: 560px; }
 .standings.scorers td, .standings.scorers th { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.standings.scorers .c-team { width: auto; min-width: 190px; max-width: 240px; }
+.standings.scorers .c-team { width: auto; min-width: 150px; max-width: 240px; }
+.standings.scorers .c-pts { padding-right: 8px; }
 .standings.scorers .c-sticky { position: sticky; left: 34px; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
 .standings.scorers tr.hl .c-sticky, .standings.scorers tr.hl .c-rank { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 .standings.scorers .c-rank { position: sticky; left: 0; z-index: 1; width: 34px; min-width: 34px; max-width: 34px; background: var(--surface); }
 .standings.scorers .scorer-name, .standings.scorers .scorer-sub { max-width: 150px; }
+@media (max-width: 480px) { .standings.scorers .scorer-name, .standings.scorers .scorer-sub { max-width: 104px; } .standings.scorers .scorer { gap: 8px; } }
 .c-nat img { width: 20px; height: 14px; object-fit: cover; border-radius: 2px; vertical-align: middle; }
