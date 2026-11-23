@@ -382,6 +382,14 @@ function summaryMatch(s: any, sport: string, id: string, slug: string): Match {
   return mapEvent(ev, sport, lg.slug ?? slug);
 }
 
+/** A finished match's lineups with quick box-score ratings (one request, no per-player detail). */
+export async function getMatchLineupsQuick(sport: string, leagueSlug: string, id: string): Promise<{ match: Match; lineups: Lineup[] }> {
+  const slug = leagueSlug || 'all';
+  const s = await getJSON<any>(`${SITE}/${sportByKey(sport).espn}/${slug}/summary?event=${id}`, 3600_000);
+  const match = summaryMatch(s, sport, id, slug);
+  return { match, lineups: rateLineups(mapLineups(s.rosters), match) };
+}
+
 /**
  * One player's line and DiDa rating in one match: the summary plus that player's detailed stats only
  * (cheaper than getMatchDetail, which loads every player). Undefined when the player wasn't in the squad.

@@ -608,3 +608,6 @@ a.scorer { color: inherit; }
 .standings.scorers .scorer-name, .standings.scorers .scorer-sub { max-width: 150px; }
 @media (max-width: 480px) { .standings.scorers .scorer-name, .standings.scorers .scorer-sub { max-width: 104px; } .standings.scorers .scorer { gap: 8px; } }
 .c-nat img { width: 20px; height: 14px; object-fit: cover; border-radius: 2px; vertical-align: middle; }
+.c-last3 { white-space: nowrap; }
+.c-last3 .rating.sm { margin: 0 1px; color: #fff; }
+.form-prog { padding-top: 4px; padding-bottom: 0; font-size: 13px; }
