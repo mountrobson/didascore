@@ -12,6 +12,7 @@ import type {
 
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports';
 const V2 = 'https://site.api.espn.com/apis/v2/sports';
+const CORE = 'https://sports.core.api.espn.com/v2/sports';
 
 // ---------- leagues ----------
 
@@ -173,8 +174,24 @@ export function peekDayMatches(sport: string, day: Date): Match[] | undefined {
 async function getLeagueCalendar(sport: string, slug: string): Promise<string[]> {
   const r = await getJSON<any>(`${SITE}/${sportByKey(sport).espn}/${slug}/scoreboard`, 600_000);
   const cal: any[] = r.leagues?.[0]?.calendar ?? [];
-  // Day calendars are ISO strings; some cups use {entries:[{startDate}]} blocks.
-  const days = cal.flatMap((c) => (typeof c === 'string' ? [c] : (c.entries ?? []).map((e: any) => e.startDate)));
+  // Leagues list their match days as ISO strings. Cups (Champions League, Europa League…) list phase blocks
+  // instead ({entries:[{startDate,endDate}]}, e.g. "League Phase" Aug–Feb), which say nothing about the actual
+  // match days, so for those the core API's "ondays" calendar is used.
+  const days: string[] = [];
+  let coarse = false;
+  for (const c of cal) {
+    if (typeof c === 'string') days.push(c);
+    else
+      for (const e of c.entries ?? []) {
+        const span = Date.parse(e.endDate) - Date.parse(e.startDate);
+        if (e.startDate && (!(span > 0) || span <= 2 * 86_400_000)) days.push(e.startDate);
+        else coarse = true;
+      }
+  }
+  if (coarse) {
+    const on = await getJSON<any>(`${CORE}/${sportByKey(sport).espn}/leagues/${slug}/calendar/ondays`, 3600_000).catch(() => undefined);
+    days.push(...(on?.eventDate?.dates ?? []));
+  }
   return [...new Set(days.filter(Boolean).map((d: string) => etYmd(new Date(d))))].sort();
 }
 
@@ -339,8 +356,6 @@ function mapLineups(rosters: any[] | undefined): Lineup[] {
     }),
   }));
 }
-
-const CORE = 'https://sports.core.api.espn.com/v2/sports';
 
 /**
  * Per-player detailed stats (minutes, xG, xA, key passes, dribbles, duels, passes, tackles, goals prevented…)

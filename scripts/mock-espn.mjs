@@ -99,18 +99,26 @@ export const teamFixtures = { team: teams.liv, events: [ev('f1', '740', 2 * 1440
 export const leagueTeams = { sports: [{ leagues: [{ teams: Object.values(teams).map((t) => ({ team: t })) }] }] };
 export const calendar = { events: [], leagues: [{ calendar: [iso(-1440 * 7), iso(-200), iso(30), iso(7 * 1440)] }] };
 
+// Cups (Champions League…) list phase blocks, not match days; the real days come from the core "ondays" calendar.
+export const cupCalendar = { events: [], leagues: [{ calendar: [{ label: 'UEFA Champions League', entries: [
+  { label: 'League Phase', startDate: iso(-1440 * 90), endDate: iso(1440 * 60) },
+  { label: 'Knockout Round Playoffs', startDate: iso(1440 * 60), endDate: iso(1440 * 80) },
+] }] }] };
+export const cupOndays = { eventDate: { type: 'ondays', dates: [iso(-1440 * 21), iso(-1440 * 20), iso(-200), iso(30), iso(1440 * 14), iso(1440 * 15)] } };
+
 export function route(url) {
   const u = new URL(url);
   const p = u.pathname;
   if (p.includes('/leagues/dropdown')) return leagues;
   if (p.endsWith('/summary')) return summary;
+  if (p.endsWith('/calendar/ondays')) return cupOndays;
   if (p.endsWith('/statistics')) return { league: { shortName: p.split('/').slice(-2, -1)[0].toUpperCase() }, stats: [{ name: 'goalsLeaders', leaders: [['Raphinha', '83', 15], ['K. Mbappé', '86', 13], ['R. Lewandowski', '83', 9]].map(([n, t, g], i) => ({ value: g, shortDisplayValue: `M: 11, G: ${g}: A: ${i}`, athlete: { id: n + p, displayName: n, team: { id: t, displayName: t === '83' ? 'Barcelona' : 'Real Madrid', abbreviation: 'X' } } })) }] };
   if (p.endsWith('/standings')) return standings;
   if (p.match(/\/teams\/\d+\/schedule$/)) return u.searchParams.get('fixture') ? teamFixtures : teamSchedule;
   if (p.match(/\/teams\/\d+$/)) return teamInfo;
   if (p.endsWith('/teams')) return leagueTeams;
   if (p.endsWith('/scoreboard')) {
-    if (!u.searchParams.get('dates')) return calendar;
+    if (!u.searchParams.get('dates')) return p.includes('/uefa.') ? cupCalendar : calendar;
     const slug = p.split('/').slice(-2, -1)[0];
     if (slug === 'all') return scoreboard;
     const lid = leagues.leagues.find((l) => l.slug === slug)?.id;
